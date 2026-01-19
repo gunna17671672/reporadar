@@ -96,6 +96,6 @@ export function HoverBorderGradient({
       >
         {children}
       </div>
-    </Tag>
+    </Component>
   );
 }
