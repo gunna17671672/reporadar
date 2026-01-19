@@ -59,16 +59,13 @@ export function HoverBorderGradient({
     }
   }, [hovered]);
 
-  return (
-    <Component
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={cn(
-        "relative flex rounded-full content-center items-center flex-col flex-nowrap h-min justify-center overflow-visible p-[2px] decoration-clone w-fit cursor-pointer",
-        containerClassName
-      )}
-      {...props}
-    >
+  const rootClass = cn(
+    "relative flex rounded-full content-center items-center flex-col flex-nowrap h-min justify-center overflow-visible p-[2px] decoration-clone w-fit cursor-pointer",
+    containerClassName
+  );
+
+  const inner = (
+    <>
       {/* Animated gradient border */}
       <motion.div
         className="absolute inset-0 rounded-[inherit] z-[1]"
@@ -77,25 +74,25 @@ export function HoverBorderGradient({
         }}
         initial={{ background: movingMap[direction] }}
         animate={{
-          background: hovered
-            ? [movingMap[direction], highlight]
-            : movingMap[direction],
+          background: hovered ? [movingMap[direction], highlight] : movingMap[direction],
         }}
         transition={{ ease: "linear", duration: duration ?? 1 }}
       />
-      
+
       {/* Background fill */}
       <div className="absolute inset-[1px] rounded-[inherit] bg-neutral-900 z-[2]" />
-      
+
       {/* Content */}
-      <div
-        className={cn(
-          "relative z-[3] text-white px-6 py-3 rounded-[inherit] bg-transparent",
-          className
-        )}
-      >
+      <div className={cn("relative z-[3] text-white px-6 py-3 rounded-[inherit] bg-transparent", className)}>
         {children}
       </div>
-    </Component>
+    </>
   );
+
+  return React.createElement(Tag as React.ElementType, {
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+    className: rootClass,
+    ...props,
+  }, inner);
 }
