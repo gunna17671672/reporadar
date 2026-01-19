@@ -154,7 +154,7 @@ function FinancialScoreButton({ children, isOutlined, onClick }: FinancialScoreB
 function FinancialScoreCard({ children }: FinancialScoreCardProps) {
   const getNextIndex = useCounter()
   const indexRef = useRef<number | null>(null)
-  const animationRef = useRef(0)
+  const animationRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [appearing, setAppearing] = useState(false)
 
   if (indexRef.current === null) {
@@ -165,10 +165,12 @@ function FinancialScoreCard({ children }: FinancialScoreCardProps) {
     const delayInc = 200
     const delay = 300 + indexRef.current! * delayInc
 
-    animationRef.current = setTimeout(() => setAppearing(true), delay)
+    animationRef.current = window.setTimeout(() => setAppearing(true), delay)
 
     return () => {
-      clearTimeout(animationRef.current)
+      if (animationRef.current) {
+        clearTimeout(animationRef.current as ReturnType<typeof setTimeout>)
+      }
     }
   }, [])
 
