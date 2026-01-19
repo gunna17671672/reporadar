@@ -198,8 +198,10 @@ const ShaderMaterial = ({
 
   useFrame((state) => {
     if (!ref.current) return;
-    if (!state.clock) return;
-    const timestamp = state.clock.getElapsedTime();
+    // FrameNextState typing may not expose `clock` on all versions; access safely
+    const clock: any = (state as any).clock;
+    if (!clock) return;
+    const timestamp = clock.getElapsedTime();
     if (timestamp - lastFrameTime < 1 / maxFps) {
       return;
     }
