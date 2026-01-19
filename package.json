@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.26.2",
+    "groq-sdk": "^0.37.0",
     "lucide-react": "^0.562.0",
     "motion": "^12.26.2",
     "next": "16.1.2",

@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+html {
+  scroll-behavior: smooth;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -122,4 +126,99 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes first {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateX(30%) translateY(-50%) rotate(120deg);
+  }
+  66% {
+    transform: translateX(-20%) translateY(20%) rotate(240deg);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(360deg);
+  }
+}
+
+@keyframes second {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateX(-30%) translateY(50%) rotate(-120deg);
+  }
+  66% {
+    transform: translateX(20%) translateY(-20%) rotate(-240deg);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(-360deg);
+  }
+}
+
+@keyframes third {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateX(20%) translateY(20%) rotate(90deg);
+  }
+  66% {
+    transform: translateX(-20%) translateY(-30%) rotate(180deg);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(270deg);
+  }
+}
+
+@keyframes fourth {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateX(-40%) translateY(-20%) rotate(-90deg);
+  }
+  66% {
+    transform: translateX(30%) translateY(30%) rotate(-180deg);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(-270deg);
+  }
+}
+
+@keyframes fifth {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateX(50%) translateY(30%) rotate(150deg);
+  }
+  66% {
+    transform: translateX(-30%) translateY(-40%) rotate(300deg);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(360deg);
+  }
+}
+
+.animate-first {
+  animation: first 20s ease-in-out infinite;
+}
+
+.animate-second {
+  animation: second 25s ease-in-out infinite;
+}
+
+.animate-third {
+  animation: third 22s ease-in-out infinite;
+}
+
+.animate-fourth {
+  animation: fourth 18s ease-in-out infinite;
+}
+
+.animate-fifth {
+  animation: fifth 30s ease-in-out infinite;
 }
