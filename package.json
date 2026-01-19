@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@paper-design/shaders-react": "^0.0.71",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-three/fiber": "^10.0.0-alpha.1",
     "class-variance-authority": "^0.7.1",

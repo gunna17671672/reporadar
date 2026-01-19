@@ -1,6 +1,6 @@
 "use client";
 
-import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
+import { GradientBackground } from "@/components/ui/paper-design-shader-background";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { HyperText } from "@/components/ui/hyper-text";
 import { Typewriter } from "@/components/ui/typewriter-text";
@@ -62,12 +62,12 @@ export default function Home() {
       <main>
         <article>
           {/* Hero Section with Gradient Animation - Sticky */}
-          <section className="h-screen w-full sticky top-0">
-            <BackgroundGradientAnimation>
+          <section className="h-screen w-full sticky top-0 relative">
+            <GradientBackground />
               <div className="absolute z-50 inset-0 flex min-h-screen w-full flex-col items-center justify-center px-8">
                 <HyperText 
                   text="REPORADAR" 
-                  className="text-8xl md:text-[12rem] font-black text-white tracking-tighter leading-none"
+                  className="text-8xl md:text-[14rem] font-light text-white tracking-tight leading-none"
                   duration={800}
                   animateOnLoad={true}
                 />
@@ -125,8 +125,7 @@ export default function Home() {
                   <ChevronDown className="w-8 h-8 text-white/60" />
                 </motion.div>
               </div>
-            </BackgroundGradientAnimation>
-          </section>
+            </section>
 
           {/* Section with Background Beams - Slides up over hero */}
           <section className="h-screen sticky top-0 rounded-t-3xl overflow-hidden bg-neutral-950 flex items-center justify-center shadow-[0_-20px_0_10px_rgb(10,10,10)]">
