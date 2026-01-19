@@ -222,3 +222,55 @@ html {
 .animate-fifth {
   animation: fifth 30s ease-in-out infinite;
 }
+
+/* Glass Button Styles */
+.glass-button-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.glass-button {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+}
+
+.glass-button-text {
+  color: white;
+}
+
+.glass-button-shadow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+  filter: blur(20px);
+  transition: opacity 0.3s ease;
+}
+
+.glass-button-wrap:hover .glass-button-shadow {
+  opacity: 0.5;
+}

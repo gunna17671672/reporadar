@@ -4,6 +4,7 @@ import type React from "react"
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { LiquidCard, CardContent, CardHeader } from "@/components/ui/liquid-glass-card"
 import { LiquidButton } from "@/components/ui/liquid-glass-button"
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient"
 
 // Types and Enums
 enum Strength {
@@ -141,8 +142,6 @@ function RepoScoreCard({ children }: RepoScoreCardProps) {
 function RepoScoreDisplay({ value, max }: RepoScoreDisplayProps) {
   const hasValue = value !== null
   const digits = String(Math.floor(value ?? 0)).split("")
-  const maxFormatted = Utils.formatNumber(max)
-  const label = hasValue ? `out of ${maxFormatted}` : "No score"
 
   return (
     <div className="absolute bottom-0 w-full text-center">
@@ -166,7 +165,6 @@ function RepoScoreDisplay({ value, max }: RepoScoreDisplayProps) {
             ))}
         </div>
       </div>
-      <div className="text-sm text-muted-foreground uppercase tracking-wide">{label}</div>
     </div>
   )
 }
@@ -231,29 +229,16 @@ function RepoScoreHalfCircle({ value, max }: RepoScoreHalfCircleProps) {
 function RepoScoreHeader({ title, strength, icon }: RepoScoreHeaderProps) {
   const hasStrength = strength !== Strength.None
 
-  const getBadgeVariant = (strength: Strength) => {
-    switch (strength) {
-      case Strength.Weak:
-        return "destructive"
-      case Strength.Moderate:
-        return "secondary"
-      case Strength.Strong:
-        return "default"
-      default:
-        return "secondary"
-    }
-  }
-
   const getBadgeClassName = (strength: Strength) => {
     switch (strength) {
       case Strength.Weak:
-        return "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
+        return "bg-red-500/20 text-red-400 border-red-500/30"
       case Strength.Moderate:
-        return "bg-yellow-100 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300"
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
       case Strength.Strong:
-        return "bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300"
+        return "bg-green-500/20 text-green-400 border-green-500/30"
       default:
-        return ""
+        return "bg-neutral-500/20 text-neutral-400 border-neutral-500/30"
     }
   }
 
@@ -277,12 +262,11 @@ function RepoScoreHeader({ title, strength, icon }: RepoScoreHeaderProps) {
         <h2 className="text-lg font-medium truncate">{title}</h2>
       </div>
       {hasStrength && strength && (
-        <LiquidButton
-          variant={getBadgeVariant(strength)}
-          className={`uppercase text-xs font-semibold shrink-0 animate-in fade-in slide-in-from-bottom-12 h-7 px-3 duration-800 delay-800 ${getBadgeClassName(strength)}`}
+        <span
+          className={`uppercase text-xs font-semibold shrink-0 animate-in fade-in slide-in-from-bottom-12 px-3 py-1.5 rounded-full border duration-800 delay-800 ${getBadgeClassName(strength)}`}
         >
           {getStrengthLabel(strength)}
-        </LiquidButton>
+        </span>
       )}
     </CardHeader>
   )
@@ -312,13 +296,15 @@ function RepoScore({ title, description, score, icon, issues, onLearnMore }: Rep
         </div>
       )}
       {onLearnMore && (
-        <LiquidButton
-          variant="default"
-          onClick={onLearnMore}
-          className="w-full h-12 text-base animate-in fade-in slide-in-from-bottom-12 duration-800 delay-300"
-        >
-          View Details
-        </LiquidButton>
+        <div className="animate-in fade-in slide-in-from-bottom-12 duration-800 delay-300 flex justify-center">
+          <HoverBorderGradient
+            onClick={onLearnMore}
+            containerClassName="w-full"
+            className="w-full flex items-center justify-center text-white font-medium"
+          >
+            View Details
+          </HoverBorderGradient>
+        </div>
       )}
     </RepoScoreCard>
   )

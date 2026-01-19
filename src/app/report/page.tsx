@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { RepoScoreCards } from "@/components/ui/repo-score-cards";
+import { MagicCard } from "@/components/ui/magic-card";
+import { GlassButton } from "@/components/ui/glass-button";
 import { 
   ArrowLeft, 
   Star, 
@@ -13,7 +15,8 @@ import {
   CheckCircle,
   AlertTriangle,
   AlertCircle,
-  Info
+  Info,
+  X
 } from "lucide-react";
 
 interface Issue {
@@ -245,30 +248,74 @@ export default function ReportPage() {
           />
         </motion.div>
 
-        {/* Selected Category Issues */}
-        {selectedCategory && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-6 mb-8"
-          >
-            <h3 className="text-lg font-semibold text-white mb-4 capitalize">
-              {selectedCategory.replace(/([A-Z])/g, ' $1').trim()} Issues
-            </h3>
-            {getIssuesForCategory(selectedCategory).length > 0 ? (
-              <div className="space-y-2">
-                {getIssuesForCategory(selectedCategory).map((issue, i) => (
-                  <IssueCard key={i} issue={issue} />
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-green-500">
-                <CheckCircle className="w-5 h-5" />
-                <span>No issues found</span>
-              </div>
-            )}
-          </motion.div>
-        )}
+        {/* Issues Modal */}
+        <AnimatePresence>
+          {selectedCategory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              onClick={() => setSelectedCategory(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl"
+              >
+                <MagicCard
+                  className="rounded-2xl border border-neutral-800"
+                  gradientColor="#06b6d4"
+                  gradientFrom="#06b6d4"
+                  gradientTo="#8b5cf6"
+                  gradientSize={400}
+                  gradientOpacity={0.3}
+                >
+                  <div className="max-h-[80vh] overflow-hidden">
+                    <div className="p-6 border-b border-neutral-800">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white">
+                      {selectedCategory === "codeQuality" && "Code Quality Issues"}
+                      {selectedCategory === "security" && "Security Issues"}
+                      {selectedCategory === "bestPractices" && "Best Practices Issues"}
+                    </h3>
+                    <button
+                      onClick={() => setSelectedCategory(null)}
+                      className="p-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                    >
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+                  <p className="text-neutral-400 text-sm mt-1">
+                    {selectedCategory === "codeQuality" && "Issues related to code organization, naming conventions, and maintainability."}
+                    {selectedCategory === "security" && "Security vulnerabilities, hardcoded secrets, and unsafe patterns detected."}
+                    {selectedCategory === "bestPractices" && "Missing documentation, tests, or configuration improvements needed."}
+                  </p>
+                </div>
+
+                    <div className="p-6 overflow-auto max-h-[60vh]">
+                      {getIssuesForCategory(selectedCategory).length > 0 ? (
+                        <div className="space-y-3">
+                          {getIssuesForCategory(selectedCategory).map((issue, i) => (
+                            <IssueCard key={i} issue={issue} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+                          <CheckCircle className="w-6 h-6 text-green-500" />
+                          <span className="text-green-400 font-medium">No issues found - Great job!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </MagicCard>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Recommendations */}
         {analysis.recommendations && analysis.recommendations.length > 0 && (
@@ -302,12 +349,12 @@ export default function ReportPage() {
           transition={{ delay: 0.4 }}
           className="text-center mt-12"
         >
-          <button
+          <GlassButton
             onClick={() => router.push("/")}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium hover:opacity-90 transition-opacity"
+            size="lg"
           >
             Scan Another Repository
-          </button>
+          </GlassButton>
         </motion.div>
       </div>
     </div>

@@ -36,13 +36,23 @@ interface AnalysisResult {
 }
 
 // ============================================
-// ALGORITHMIC SCORING SYSTEM
+// ALGORITHMIC SCORING SYSTEM (DETERMINISTIC)
 // ============================================
 
 interface ScoreBreakdown {
   codeQuality: { score: number; issues: Issue[]; details: string[] };
   security: { score: number; issues: Issue[]; details: string[] };
   bestPractices: { score: number; issues: Issue[]; details: string[] };
+}
+
+// Helper to sort issues deterministically by severity then message
+function sortIssues(issues: Issue[]): Issue[] {
+  const severityOrder = { critical: 0, warning: 1, info: 2 };
+  return [...issues].sort((a, b) => {
+    const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
+    if (severityDiff !== 0) return severityDiff;
+    return a.message.localeCompare(b.message);
+  });
 }
 
 // Security patterns to detect
@@ -84,13 +94,16 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
   // Check for README
   const hasReadme = fileNames.some(f => f.includes("readme"));
   if (!hasReadme) {
-    score -= 15;
+    score -= 20;
     issues.push({ severity: "warning", message: "No README.md file found" });
   } else {
     const readmeFile = files.find(f => f.path.toLowerCase().includes("readme"));
-    if (readmeFile && readmeFile.content.length < 200) {
+    if (readmeFile && readmeFile.content.length < 500) {
+      score -= 15;
+      issues.push({ severity: "warning", message: "README is too minimal (< 500 chars) - needs better documentation" });
+    } else if (readmeFile && readmeFile.content.length < 1000) {
       score -= 8;
-      issues.push({ severity: "info", message: "README exists but is minimal (< 200 chars)" });
+      issues.push({ severity: "info", message: "README could be more comprehensive" });
     } else {
       details.push("✓ Good README documentation");
     }
@@ -99,7 +112,7 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
   // Check for .gitignore
   const hasGitignore = fileNames.some(f => f.includes(".gitignore"));
   if (!hasGitignore) {
-    score -= 10;
+    score -= 15;
     issues.push({ severity: "warning", message: "No .gitignore file found" });
   } else {
     details.push("✓ .gitignore present");
@@ -112,22 +125,25 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
   );
   if (hasDependencyFile) {
     details.push("✓ Dependency management configured");
+  } else {
+    score -= 10;
+    issues.push({ severity: "info", message: "No dependency/package management file found" });
   }
   
   // Check for TypeScript config
   const hasTypeScript = fileNames.some(f => f.endsWith(".ts") || f.endsWith(".tsx"));
   const hasTsConfig = fileNames.some(f => f.includes("tsconfig"));
   if (hasTypeScript && !hasTsConfig) {
-    score -= 8;
-    issues.push({ severity: "info", message: "TypeScript files without tsconfig.json" });
+    score -= 12;
+    issues.push({ severity: "warning", message: "TypeScript files without tsconfig.json" });
   }
   
   // Check for environment example
   const hasEnvExample = fileNames.some(f => f.includes(".env.example") || f.includes(".env.sample"));
   const usesEnvVars = allContent.includes("process.env") || allContent.includes("os.environ") || allContent.includes("getenv");
   if (usesEnvVars && !hasEnvExample) {
-    score -= 8;
-    issues.push({ severity: "info", message: "Uses environment variables but no .env.example file" });
+    score -= 12;
+    issues.push({ severity: "warning", message: "Uses environment variables but no .env.example file" });
   } else if (hasEnvExample) {
     details.push("✓ Environment example provided");
   }
@@ -137,8 +153,8 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
     f.includes("test") || f.includes("spec") || f.includes("__tests__")
   ) || allContent.includes("describe(") || allContent.includes("it(") || allContent.includes("test(");
   if (!hasTests) {
-    score -= 10;
-    issues.push({ severity: "info", message: "No test files detected" });
+    score -= 20;
+    issues.push({ severity: "warning", message: "No test files detected - testing is critical" });
   } else {
     details.push("✓ Test files present");
   }
@@ -146,7 +162,7 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
   // Check for license
   const hasLicense = fileNames.some(f => f.includes("license"));
   if (!hasLicense) {
-    score -= 5;
+    score -= 10;
     issues.push({ severity: "info", message: "No LICENSE file found" });
   } else {
     details.push("✓ License file present");
@@ -156,7 +172,7 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
   const hasTryCatch = allContent.includes("try {") || allContent.includes("try{");
   const hasErrorHandler = allContent.includes("catch") || allContent.includes(".catch(") || allContent.includes("except ");
   if (!hasTryCatch && !hasErrorHandler) {
-    score -= 10;
+    score -= 15;
     issues.push({ severity: "warning", message: "No error handling patterns detected" });
   } else {
     details.push("✓ Error handling implemented");
@@ -168,12 +184,12 @@ function checkBestPractices(files: RepoFile[], repoInfo: { name: string; descrip
   if (asyncFunctions > 0 || awaitStatements > 3) {
     const tryCatchCount = (allContent.match(/try\s*\{/g) || []).length;
     if (tryCatchCount < asyncFunctions * 0.3) {
-      score -= 5;
-      issues.push({ severity: "info", message: "Async code may lack proper error handling" });
+      score -= 10;
+      issues.push({ severity: "warning", message: "Async code lacks proper error handling" });
     }
   }
   
-  return { score: Math.max(0, score), issues, details };
+  return { score: Math.max(0, score), issues: sortIssues(issues), details: details.sort() };
 }
 
 // Analyze file for security issues
@@ -183,6 +199,17 @@ function analyzeSecurityPatterns(files: RepoFile[]): { score: number; issues: Is
   const details: string[] = [];
   const foundPatterns = new Set<string>();
   
+  // Count actual code files for context
+  const codeExtensions = [".js", ".jsx", ".ts", ".tsx", ".py", ".java", ".go", ".rs", ".rb", ".php", ".c", ".cpp", ".cs", ".swift", ".kt", ".vue", ".svelte"];
+  const codeFiles = files.filter(f => codeExtensions.some(ext => f.path.endsWith(ext)));
+  
+  // If no code files, can't really assess security meaningfully
+  if (codeFiles.length === 0) {
+    score = 50;
+    issues.push({ severity: "warning", message: "No code files to assess for security vulnerabilities" });
+    return { score, issues, details };
+  }
+  
   for (const file of files) {
     // Skip certain files from security scanning
     if (file.path.includes(".md") || file.path.includes(".txt") || file.path.includes("test")) continue;
@@ -191,7 +218,7 @@ function analyzeSecurityPatterns(files: RepoFile[]): { score: number; issues: Is
       const matches = file.content.match(check.pattern);
       if (matches && !foundPatterns.has(check.message)) {
         foundPatterns.add(check.message);
-        const deduction = check.severity === "critical" ? 25 : check.severity === "warning" ? 12 : 5;
+        const deduction = check.severity === "critical" ? 30 : check.severity === "warning" ? 15 : 8;
         score -= deduction;
         issues.push({
           severity: check.severity,
@@ -214,7 +241,7 @@ function analyzeSecurityPatterns(files: RepoFile[]): { score: number; issues: Is
     score = 100;
   }
   
-  return { score: Math.max(0, score), issues, details };
+  return { score: Math.max(0, score), issues: sortIssues(issues), details: details.sort() };
 }
 
 // Analyze code quality
@@ -228,22 +255,29 @@ function analyzeCodeQuality(files: RepoFile[]): { score: number; issues: Issue[]
   let codeFiles = 0;
   let avgFileSize = 0;
   
+  // Count actual code files (exclude config/docs)
+  const codeExtensions = [".js", ".jsx", ".ts", ".tsx", ".py", ".java", ".go", ".rs", ".rb", ".php", ".c", ".cpp", ".cs", ".swift", ".kt", ".vue", ".svelte"];
+  
   for (const file of files) {
     // Skip non-code files
-    if (file.path.endsWith(".md") || file.path.endsWith(".json") || file.path.endsWith(".yaml") || file.path.endsWith(".yml")) continue;
+    if (file.path.endsWith(".md") || file.path.endsWith(".json") || file.path.endsWith(".yaml") || file.path.endsWith(".yml") || file.path.endsWith(".toml")) continue;
     
-    codeFiles++;
-    const lines = file.content.split("\n").length;
-    totalLines += lines;
+    const isCodeFile = codeExtensions.some(ext => file.path.endsWith(ext));
+    if (isCodeFile) {
+      codeFiles++;
+      const lines = file.content.split("\n").length;
+      totalLines += lines;
+    }
     
     // Check file size
+    const lines = file.content.split("\n").length;
     if (lines > 500) {
       if (!issueCounts["large_file"]) {
         issueCounts["large_file"] = 0;
-        issues.push({ severity: "info", message: "Some files exceed 500 lines - consider splitting", file: file.path });
+        issues.push({ severity: "warning", message: "Some files exceed 500 lines - consider splitting", file: file.path });
       }
       issueCounts["large_file"]++;
-      score -= 3;
+      score -= 5;
     }
     
     // Check for patterns
@@ -262,8 +296,8 @@ function analyzeCodeQuality(files: RepoFile[]): { score: number; issues: Issue[]
           });
         }
         issueCounts[key] += matches.length;
-        const deduction = check.severity === "warning" ? 4 : 2;
-        score -= Math.min(deduction * matches.length, 15);
+        const deduction = check.severity === "warning" ? 6 : 3;
+        score -= Math.min(deduction * matches.length, 20);
       }
     }
     
@@ -271,14 +305,38 @@ function analyzeCodeQuality(files: RepoFile[]): { score: number; issues: Issue[]
     const longLines = file.content.split("\n").filter(line => line.length > 150).length;
     if (longLines > 5 && !issueCounts["long_lines"]) {
       issueCounts["long_lines"] = longLines;
-      score -= 5;
+      score -= 8;
       issues.push({ severity: "info", message: `${longLines} lines exceed 150 characters`, file: file.path });
     }
   }
   
+  // STRICT: Penalize repositories with minimal code content
+  if (codeFiles === 0) {
+    score -= 50;
+    issues.push({ severity: "critical", message: "No actual code files found - repository lacks implementation" });
+  } else if (codeFiles === 1) {
+    score -= 25;
+    issues.push({ severity: "warning", message: "Only 1 code file found - very minimal codebase" });
+  } else if (codeFiles <= 3) {
+    score -= 15;
+    issues.push({ severity: "info", message: "Very few code files - limited codebase" });
+  }
+  
+  // STRICT: Penalize very little total code
+  if (totalLines < 50 && codeFiles > 0) {
+    score -= 30;
+    issues.push({ severity: "warning", message: `Only ${totalLines} lines of code - insufficient implementation` });
+  } else if (totalLines < 150 && codeFiles > 0) {
+    score -= 15;
+    issues.push({ severity: "info", message: `Only ${totalLines} lines of code - minimal implementation` });
+  } else if (totalLines < 300 && codeFiles > 0) {
+    score -= 8;
+    issues.push({ severity: "info", message: `${totalLines} lines of code - small codebase` });
+  }
+  
   if (codeFiles > 0) {
     avgFileSize = Math.round(totalLines / codeFiles);
-    if (avgFileSize < 300) {
+    if (avgFileSize < 300 && avgFileSize > 30) {
       details.push(`✓ Good file sizes (avg: ${avgFileSize} lines)`);
     }
   }
@@ -299,12 +357,12 @@ function analyzeCodeQuality(files: RepoFile[]): { score: number; issues: Issue[]
     else fileNamingStyles.camel++;
   }
   
-  const totalFiles = Object.values(fileNamingStyles).reduce((a, b) => a + b, 0);
+  const totalFilesForNaming = Object.values(fileNamingStyles).reduce((a, b) => a + b, 0);
   const dominantStyle = Math.max(...Object.values(fileNamingStyles));
-  if (totalFiles > 3 && dominantStyle / totalFiles < 0.6) {
-    score -= 5;
+  if (totalFilesForNaming > 3 && dominantStyle / totalFilesForNaming < 0.6) {
+    score -= 8;
     issues.push({ severity: "info", message: "Inconsistent file naming conventions" });
-  } else if (totalFiles > 3) {
+  } else if (totalFilesForNaming > 3) {
     details.push("✓ Consistent file naming");
   }
   
@@ -312,7 +370,7 @@ function analyzeCodeQuality(files: RepoFile[]): { score: number; issues: Issue[]
     details.push("✓ Good code quality patterns");
   }
   
-  return { score: Math.max(0, Math.min(100, score)), issues, details };
+  return { score: Math.max(0, Math.min(100, score)), issues: sortIssues(issues), details: details.sort() };
 }
 
 // Calculate overall score with weighted average
@@ -426,7 +484,7 @@ async function fetchFileContent(owner: string, repo: string, path: string): Prom
   return "";
 }
 
-// Filter important files for analysis
+// Filter important files for analysis - DETERMINISTIC ordering
 function filterImportantFiles(files: Array<{ path: string; type: string }>): string[] {
   const importantExtensions = [
     ".js", ".jsx", ".ts", ".tsx", ".py", ".java", ".go", ".rs", ".rb",
@@ -442,6 +500,23 @@ function filterImportantFiles(files: Array<{ path: string; type: string }>): str
     "Dockerfile", ".gitignore", "tsconfig.json", "next.config.js",
     "next.config.ts", "vite.config.ts", "webpack.config.js"
   ];
+
+  // Priority scoring for deterministic file selection
+  const getPriority = (path: string): number => {
+    const fileName = path.split("/").pop() || "";
+    // Config files get highest priority
+    if (importantFiles.includes(fileName)) return 100;
+    // Root level files get higher priority
+    const depth = path.split("/").length;
+    const depthBonus = Math.max(0, 10 - depth);
+    // Code files by extension priority
+    if (path.endsWith(".ts") || path.endsWith(".tsx")) return 80 + depthBonus;
+    if (path.endsWith(".js") || path.endsWith(".jsx")) return 75 + depthBonus;
+    if (path.endsWith(".py")) return 70 + depthBonus;
+    if (path.endsWith(".go") || path.endsWith(".rs")) return 65 + depthBonus;
+    if (path.endsWith(".java") || path.endsWith(".kt")) return 60 + depthBonus;
+    return 50 + depthBonus;
+  };
 
   return files
     .filter((f) => f.type === "blob")
@@ -462,7 +537,13 @@ function filterImportantFiles(files: Array<{ path: string; type: string }>): str
     .filter((f) => !f.path.includes(".git/"))
     .filter((f) => !f.path.includes("coverage/"))
     .filter((f) => !f.path.includes("test/") && !f.path.includes("tests/") && !f.path.includes("__tests__/"))
-    .slice(0, 15) // Limit to 15 files to reduce API usage
+    // DETERMINISTIC: Sort by priority (descending), then alphabetically by path
+    .sort((a, b) => {
+      const priorityDiff = getPriority(b.path) - getPriority(a.path);
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.path.localeCompare(b.path);
+    })
+    .slice(0, 20) // Increased to 20 files for better analysis
     .map((f) => f.path);
 }
 
@@ -599,7 +680,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get language breakdown
+    // Get language breakdown (sorted deterministically by percentage descending)
     const languagesResponse = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/languages`,
       {
@@ -608,10 +689,15 @@ export async function POST(request: NextRequest) {
     );
     const languagesData = await languagesResponse.json();
     const totalBytes = Object.values(languagesData as Record<string, number>).reduce((a, b) => a + b, 0);
-    const languages: Record<string, number> = {};
+    const languagesUnsorted: Record<string, number> = {};
     for (const [lang, bytes] of Object.entries(languagesData as Record<string, number>)) {
-      languages[lang] = Math.round((bytes / totalBytes) * 100);
+      languagesUnsorted[lang] = Math.round((bytes / totalBytes) * 100);
     }
+    // Sort languages by percentage (descending), then alphabetically
+    const languages: Record<string, number> = {};
+    Object.entries(languagesUnsorted)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .forEach(([lang, pct]) => { languages[lang] = pct; });
 
     // Run algorithmic analysis first (deterministic)
     const algorithmicScores: ScoreBreakdown = {
