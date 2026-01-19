@@ -192,7 +192,8 @@ const ShaderMaterial = ({
   uniforms: Uniforms;
 }) => {
   const { size } = useThree();
- const ref = useRef<THREE.Mesh>(null);
+  // force-redeploy: ensure useRef initialised to null (helps TypeScript checks on build)
+  const ref = useRef<THREE.Mesh>(null);
   let lastFrameTime = 0;
 
   useFrame((state) => {
