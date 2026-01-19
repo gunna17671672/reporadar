@@ -276,7 +276,7 @@ function FinancialScoreHalfCircle({ value, max }: FinancialScoreHalfCircleProps)
 function FinancialScoreHeader({ title, strength }: FinancialScoreHeaderProps) {
   const hasStrength = strength !== Strength.None
 
-  const getBadgeVariant = (strength: Strength) => {
+  const getBadgeVariant = (strength?: Strength) => {
     switch (strength) {
       case Strength.Weak:
         return "destructive"
@@ -289,7 +289,7 @@ function FinancialScoreHeader({ title, strength }: FinancialScoreHeaderProps) {
     }
   }
 
-  const getBadgeClassName = (strength: Strength) => {
+  const getBadgeClassName = (strength?: Strength) => {
     switch (strength) {
       case Strength.Weak:
         return "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
